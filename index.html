@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shooter Game</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            overflow: 0;
+        }
+        
+        #game-container {
+            width: 800px;
+            height: 600px;
+            background-color: #000;
+            margin: 20px auto;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid #fff;
+            border-radius: 10px;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: transparent;
+        }
+
+        .star-field {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('/starfield.png') repeat;
+            animation: moveStars 50s linear infinite;
+        }
+
+        @keyframes moveStars {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 1000px; }
+        }
+
+        .progress-bar-container {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container text-center">
+        <h1>Shooter Game</h1>
+        <div id="game-container" class="position-relative border rounded">
+            <div class="star-field"></div>
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="power-up-progress"></div>
+            </div>
+        </div>
+        <div class="score-board mt-3">
+            <p>Score: <span id="score">0</span></p>
+            <button id="start-btn" class="btn btn-primary">Start Game</button>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const startBtn = document.getElementById('start-btn');
+            const scoreDisplay = document.getElementById('score');
+            const progressBar = document.getElementById('power-up-progress');
+            let score = 0;
+            let gameInterval;
+            let enemyInterval;
+            let powerUpDuration = 0;
+            let powerUpInterval;
+            let player;
+            let bullets = [];
+            let enemies = [];
+            let powerUps = [];
+            let keys = {};
+            
+            const bulletSound = new Howl({ src: ['/bullet.mp3'] });
+            const explosionSound = new Howl({ src: ['/explosion.mp3'] });
+            const playerImage = new Image();
+            playerImage.src = '/mini1.png'; // replace with actual image path
+            const enemyImage = new Image();
+            enemyImage.src = '/OIP (8).jpeg'; // replace with actual image path
+            const speedPowerUpImage = new Image();
+            speedPowerUpImage.src = '/boost1.jpeg'; // replace with actual image path
+            const doublePowerUpImage = new Image();
+            doublePowerUpImage.src = '/5579584.png'; // replace with actual image path
+        
+            class Player {
+                constructor() {
+                    this.width = 50;
+                    this.height = 50;
+                    this.x = canvas.width / 2 - this.width / 2;
+                    this.y = canvas.height - this.height - 10;
+                    this.speed = 10;
+                }
+                
+                draw() {
+                    ctx.drawImage(playerImage, this.x, this.y, this.width, this.height);
+                }
+                
+                move() {
+                    if (keys['ArrowLeft'] && this.x > 0) this.x -= this.speed;
+                    if (keys['ArrowRight'] && this.x < canvas.width - this.width) this.x += this.speed;
+                }
+                
+                shoot() {
+                    const bullet = new Bullet(this.x + this.width / 2 - 5, this.y);
+                    bullets.push(bullet);
+                    bulletSound.play();
+                }
+            }
+        
+            class Bullet {
+                constructor(x, y) {
+                    this.width = 10;
+                    this.height = 20;
+                    this.x = x;
+                    this.y = y;
+                    this.speed = 7;
+                    this.color = '#2ed573';
+                }
+                
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+                
+                update() {
+                    this.y -= this.speed;
+                }
+            }
+        
+            class Enemy {
+                constructor(x, y, speed) {
+                    this.width = 30;
+                    this.height = 30;
+                    this.x = x;
+                    this.y = y;
+                    this.speed = speed;
+                }
+                
+                draw() {
+                    ctx.drawImage(enemyImage, this.x, this.y, this.width, this.height);
+                }
+                
+                update() {
+                    this.y += this.speed;
+                }
+            }
+        
+            class PowerUp {
+                constructor(x, y, type) {
+                    this.width = 20;
+                    this.height = 20;
+                    this.x = x;
+                    this.y = y;
+                    this.type = type;
+                }
+                
+                draw() {
+                    const image = this.type === 'speed' ? speedPowerUpImage : doublePowerUpImage;
+                    ctx.drawImage(image, this.x, this.y, this.width, this.height);
+                }
+                
+                update() {
+                    this.y += 3;
+                }
+            }
+        
+            function startGame() {
+                score = 0;
+                scoreDisplay.innerText = score;
+                player = new Player();
+                bullets = [];
+                enemies = [];
+                powerUps = [];
+                keys = {};
+                gameInterval = setInterval(gameLoop, 30);
+                enemyInterval = setInterval(spawnEnemy, 1000);
+                startBtn.disabled = true;
+            }
+        
+            function gameLoop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                player.draw();
+                player.move();
+                
+                bullets.forEach((bullet, index) => {
+                    bullet.update();
+                    bullet.draw();
+                    if (bullet.y < 0) bullets.splice(index, 1);
+                });
+        
+                enemies.forEach((enemy, index) => {
+                    enemy.update();
+                    enemy.draw();
+                    if (enemy.y > canvas.height) enemies.splice(index, 1);
+                    if (checkCollision(player, enemy)) {
+                        endGame();
+                    }
+                    bullets.forEach((bullet, bulletIndex) => {
+                        if (checkCollision(bullet, enemy)) {
+                            enemies.splice(index, 1);
+                            bullets.splice(bulletIndex, 1);
+                            score += 10;
+                            scoreDisplay.innerText = score;
+                            explosionSound.play();
+                        }
+                    });
+                });
+        
+                powerUps.forEach((powerUp, index) => {
+                    powerUp.update();
+                    powerUp.draw();
+                    if (powerUp.y > canvas.height) powerUps.splice(index, 1);
+                    if (checkCollision(player, powerUp)) {
+                        activatePowerUp(powerUp.type);
+                        powerUps.splice(index, 1);
+                    }
+                });
+                
+                if (Math.random() < 0.01) spawnPowerUp();
+            }
+        
+            function spawnEnemy() {
+                const x = Math.random() * (canvas.width - 30);
+                const y = 0;
+                const speed = 2 + Math.random() * 3;
+                const enemy = new Enemy(x, y, speed);
+                enemies.push(enemy);
+            }
+        
+            function spawnPowerUp() {
+                const x = Math.random() * (canvas.width - 20);
+                const y = 0;
+                const type = Math.random() > 0.5 ? 'speed' : 'double';
+                const powerUp = new PowerUp(x, y, type);
+                powerUps.push(powerUp);
+            }
+        
+            function activatePowerUp(type) {
+                if (type === 'speed') {
+                    player.speed += 2;
+                    startPowerUpTimer();
+                }
+                if (type === 'double') {
+                    player.shoot = function() {
+                        const bullet1 = new Bullet(this.x + this.width / 2 - 15, this.y);
+                        const bullet2 = new Bullet(this.x + this.width / 2 + 5, this.y);
+                        bullets.push(bullet1, bullet2);
+                        bulletSound.play();
+                    };
+                    startPowerUpTimer();
+                }
+            }
+
+            function startPowerUpTimer() {
+                powerUpDuration = 10; // 10 seconds
+                progressBar.style.width = '100%';
+                clearInterval(powerUpInterval);
+                powerUpInterval = setInterval(() => {
+                    powerUpDuration--;
+                    progressBar.style.width = (powerUpDuration / 10) * 100 + '%';
+                    if (powerUpDuration <= 0) {
+                        clearInterval(powerUpInterval);
+                        resetPowerUps();
+                    }
+                }, 1000);
+            }
+
+            function resetPowerUps() {
+                player.speed = 10;
+                player.shoot = function() {
+                    const bullet = new Bullet(this.x + this.width / 2 - 5, this.y);
+                    bullets.push(bullet);
+                    bulletSound.play();
+                };
+                progressBar.style.width = '0%';
+            }
+        
+            function endGame() {
+                clearInterval(gameInterval);
+                clearInterval(enemyInterval);
+                clearInterval(powerUpInterval);
+                alert('Game Over! Your score: ' + score);
+                startBtn.disabled = false;
+            }
+        
+            function checkCollision(a, b) {
+                return a.x < b.x + b.width &&
+                       a.x + a.width > b.x &&
+                       a.y < b.y + b.height &&
+                       a.y + a.height > b.y;
+            }
+        
+            window.addEventListener('keydown', (e) => {
+                keys[e.key] = true;
+                if (e.key === ' ') player.shoot();
+            });
+        
+            window.addEventListener('keyup', (e) => {
+                keys[e.key] = false;
+            });
+        
+            startBtn.addEventListener('click', startGame);
+        });
+    </script>
+</body>
+</html>
