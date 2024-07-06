@@ -3,31 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shooter Game</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Cosmic Defender</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            background-color: #000;
-            font-family: Arial, sans-serif;
-            color: #fff;
-            overflow: 0;
+        :root {
+            --primary-color: #6e00ff;
+            --secondary-color: #00ffff;
+            --bg-color: #000033;
+            --text-color: #ffffff;
         }
-        
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: auto 1fr auto;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        h1 {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 3rem;
+            margin: 0;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
         #game-container {
-            width: 800px;
-            height: 600px;
-            background-color: #000;
-            margin: 20px auto;
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+            aspect-ratio: 4 / 3;
+            max-height: 80vh;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
             overflow: hidden;
             position: relative;
-            border: 2px solid #fff;
-            border-radius: 10px;
         }
-        
+
         canvas {
+            width: 100%;
+            height: 100%;
             display: block;
-            margin: 0 auto;
-            background-color: transparent;
         }
 
         .star-field {
@@ -36,7 +65,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: url('/starfield.png') repeat;
+            background: url('starfield.png') repeat;
             animation: moveStars 50s linear infinite;
         }
 
@@ -45,53 +74,136 @@
             100% { background-position: 0 1000px; }
         }
 
-        .progress-bar-container {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 20px;
-            border: 2px solid #fff;
+        .controls {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .stats {
+            grid-column: 3 / 4;
+            grid-row: 2 / 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .bento-item {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
             border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: var(--text-color);
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
             overflow: hidden;
+            margin-top: 10px;
         }
 
         .progress-bar {
             width: 0;
             height: 100%;
-            background-color: #28a745;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s;
+        }
+
+        #voice-commands {
+            margin-top: 20px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="container text-center">
-        <h1>Shooter Game</h1>
-        <div id="game-container" class="position-relative border rounded">
-            <div class="star-field"></div>
-            <canvas id="gameCanvas" width="800" height="600"></canvas>
-            <div class="progress-bar-container">
-                <div class="progress-bar" id="power-up-progress"></div>
+    <div class="container">
+        <h1>Cosmic Defender</h1>
+        <div class="controls">
+            <h2>Controls</h2>
+            <p>← → : Move</p>
+            <p>Space : Shoot</p>
+            <button id="start-btn">Start Game</button>
+            <div id="voice-commands">
+                <button id="voice-btn">Enable Voice Commands</button>
+                <p id="voice-status"></p>
             </div>
         </div>
-        <div class="score-board mt-3">
-            <p>Score: <span id="score">0</span></p>
-            <button id="start-btn" class="btn btn-primary">Start Game</button>
+        <div id="game-container">
+            <div class="star-field"></div>
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div class="stats">
+            <h2>Stats</h2>
+            <div class="bento-grid">
+                <div class="bento-item">
+                    <h3>Score</h3>
+                    <p id="score">0</p>
+                </div>
+                <div class="bento-item">
+                    <h3>Level</h3>
+                    <p id="level">1</p>
+                </div>
+                <div class="bento-item">
+                    <h3>Power-Up</h3>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="power-up-progress"></div>
+                    </div>
+                </div>
+                <div class="bento-item">
+                    <h3>High Score</h3>
+                    <p id="high-score">0</p>
+                </div>
+            </div>
         </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
             const startBtn = document.getElementById('start-btn');
             const scoreDisplay = document.getElementById('score');
+            const levelDisplay = document.getElementById('level');
+            const highScoreDisplay = document.getElementById('high-score');
             const progressBar = document.getElementById('power-up-progress');
+            const voiceBtn = document.getElementById('voice-btn');
+            const voiceStatus = document.getElementById('voice-status');
+
             let score = 0;
+            let level = 1;
+            let highScore = localStorage.getItem('highScore') || 0;
             let gameInterval;
             let enemyInterval;
             let powerUpDuration = 0;
@@ -104,22 +216,29 @@
             
             const bulletSound = new Howl({ src: ['bullet.mp3'] });
             const explosionSound = new Howl({ src: ['explosion.mp3'] });
+            const powerUpSound = new Howl({ src: ['powerup.mp3'] });
+            const backgroundMusic = new Howl({
+                src: ['background.mp3'],
+                loop: true,
+                volume: 0.5
+            });
+
             const playerImage = new Image();
-            playerImage.src = 'mini1.png'; // replace with actual image path
+            playerImage.src = 'mini1.png';
             const enemyImage = new Image();
-            enemyImage.src = 'OIP (8).jpeg'; // replace with actual image path
+            enemyImage.src = 'OIP (8).jpeg';
             const speedPowerUpImage = new Image();
-            speedPowerUpImage.src = 'boost1.jpeg'; // replace with actual image path
+            speedPowerUpImage.src = 'boost1.jpeg';
             const doublePowerUpImage = new Image();
-            doublePowerUpImage.src = '5579584.png'; // replace with actual image path
-        
+            doublePowerUpImage.src = '5579584.png';
+
             class Player {
                 constructor() {
                     this.width = 50;
                     this.height = 50;
                     this.x = canvas.width / 2 - this.width / 2;
                     this.y = canvas.height - this.height - 10;
-                    this.speed = 10;
+                    this.speed = 5;
                 }
                 
                 draw() {
@@ -145,7 +264,7 @@
                     this.x = x;
                     this.y = y;
                     this.speed = 7;
-                    this.color = '#2ed573';
+                    this.color = '#00ffff';
                 }
                 
                 draw() {
@@ -160,8 +279,8 @@
         
             class Enemy {
                 constructor(x, y, speed) {
-                    this.width = 30;
-                    this.height = 30;
+                    this.width = 40;
+                    this.height = 40;
                     this.x = x;
                     this.y = y;
                     this.speed = speed;
@@ -178,8 +297,8 @@
         
             class PowerUp {
                 constructor(x, y, type) {
-                    this.width = 20;
-                    this.height = 20;
+                    this.width = 30;
+                    this.height = 30;
                     this.x = x;
                     this.y = y;
                     this.type = type;
@@ -191,21 +310,24 @@
                 }
                 
                 update() {
-                    this.y += 3;
+                    this.y += 2;
                 }
             }
         
             function startGame() {
                 score = 0;
+                level = 1;
                 scoreDisplay.innerText = score;
+                levelDisplay.innerText = level;
                 player = new Player();
                 bullets = [];
                 enemies = [];
                 powerUps = [];
                 keys = {};
-                gameInterval = setInterval(gameLoop, 30);
+                gameInterval = setInterval(gameLoop, 16);
                 enemyInterval = setInterval(spawnEnemy, 1000);
                 startBtn.disabled = true;
+                backgroundMusic.play();
             }
         
             function gameLoop() {
@@ -222,7 +344,11 @@
                 enemies.forEach((enemy, index) => {
                     enemy.update();
                     enemy.draw();
-                    if (enemy.y > canvas.height) enemies.splice(index, 1);
+                    if (enemy.y > canvas.height) {
+                        enemies.splice(index, 1);
+                        score -= 5;
+                        updateScore();
+                    }
                     if (checkCollision(player, enemy)) {
                         endGame();
                     }
@@ -231,8 +357,9 @@
                             enemies.splice(index, 1);
                             bullets.splice(bulletIndex, 1);
                             score += 10;
-                            scoreDisplay.innerText = score;
+                            updateScore();
                             explosionSound.play();
+                            createExplosion(enemy.x, enemy.y);
                         }
                     });
                 });
@@ -244,22 +371,28 @@
                     if (checkCollision(player, powerUp)) {
                         activatePowerUp(powerUp.type);
                         powerUps.splice(index, 1);
+                        powerUpSound.play();
                     }
                 });
                 
-                if (Math.random() < 0.01) spawnPowerUp();
+                if (Math.random() < 0.005) spawnPowerUp();
+
+                if (score > 0 && score % 100 === 0) {
+                    level++;
+                    levelDisplay.innerText = level;
+                }
             }
         
             function spawnEnemy() {
-                const x = Math.random() * (canvas.width - 30);
+                const x = Math.random() * (canvas.width - 40);
                 const y = 0;
-                const speed = 2 + Math.random() * 3;
+                const speed = 1 + Math.random() * 3 + (level * 0.5);
                 const enemy = new Enemy(x, y, speed);
                 enemies.push(enemy);
             }
         
             function spawnPowerUp() {
-                const x = Math.random() * (canvas.width - 20);
+                const x = Math.random() * (canvas.width - 30);
                 const y = 0;
                 const type = Math.random() > 0.5 ? 'speed' : 'double';
                 const powerUp = new PowerUp(x, y, type);
@@ -268,7 +401,7 @@
         
             function activatePowerUp(type) {
                 if (type === 'speed') {
-                    player.speed += 2;
+                    player.speed += 3;
                     startPowerUpTimer();
                 }
                 if (type === 'double') {
@@ -283,7 +416,7 @@
             }
 
             function startPowerUpTimer() {
-                powerUpDuration = 10; // 10 seconds
+                powerUpDuration = 10;
                 progressBar.style.width = '100%';
                 clearInterval(powerUpInterval);
                 powerUpInterval = setInterval(() => {
@@ -297,7 +430,7 @@
             }
 
             function resetPowerUps() {
-                player.speed = 10;
+                player.speed = 5;
                 player.shoot = function() {
                     const bullet = new Bullet(this.x + this.width / 2 - 5, this.y);
                     bullets.push(bullet);
@@ -310,6 +443,12 @@
                 clearInterval(gameInterval);
                 clearInterval(enemyInterval);
                 clearInterval(powerUpInterval);
+                backgroundMusic.stop();
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('highScore', highScore);
+                    highScoreDisplay.innerText = highScore;
+                }
                 alert('Game Over! Your score: ' + score);
                 startBtn.disabled = false;
             }
@@ -320,6 +459,47 @@
                        a.y < b.y + b.height &&
                        a.y + a.height > b.y;
             }
+
+            function updateScore() {
+                scoreDisplay.innerText = score;
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreDisplay.innerText = highScore;
+                }
+            }
+
+            function createExplosion(x, y) {
+                const particles = 20;
+                for (let i = 0; i < particles; i++) {
+                    const particle = document.createElement('div');
+                    particle.style.position = 'absolute';
+                    particle.style.left = `${x + 20}px`;
+                    particle.style.top = `${y + 20}px`;
+                    particle.style.width = '5px';
+                    particle.style.height = '5px';
+                    particle.style.borderRadius = '50%';
+                    particle.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                    document.body.appendChild(particle);
+
+                    gsap.to(particle, {
+                        duration: 0.5 + Math.random() * 0.5,
+                        x: (Math.random() - 0.5) * 100,
+                        y: (Math.random() - 0.5) * 100,
+                        opacity: 0,
+                        onComplete: () => {
+                            document.body.removeChild(particle);
+                        }
+                    });
+                }
+            }
+
+            function resizeCanvas() {
+                const container = document.getElementById('game-container');
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+            }
+
+            window.addEventListener('resize', resizeCanvas);
         
             window.addEventListener('keydown', (e) => {
                 keys[e.key] = true;
@@ -331,6 +511,48 @@
             });
         
             startBtn.addEventListener('click', startGame);
+
+            // Voice commands
+            let recognition;
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = false;
+
+                recognition.onresult = function(event) {
+                    const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                    if (command.includes('left')) {
+                        keys['ArrowLeft'] = true;
+                        setTimeout(() => keys['ArrowLeft'] = false, 500);
+                    } else if (command.includes('right')) {
+                        keys['ArrowRight'] = true;
+                        setTimeout(() => keys['ArrowRight'] = false, 500);
+                    } else if (command.includes('shoot') || command.includes('fire')) {
+                        player.shoot();
+                    } else if (command.includes('start')) {
+                        startGame();
+                    }
+                };
+
+                voiceBtn.addEventListener('click', () => {
+                    if (recognition.started) {
+                        recognition.stop();
+                        voiceStatus.textContent = 'Voice commands disabled';
+                        voiceBtn.textContent = 'Enable Voice Commands';
+                    } else {
+                        recognition.start();
+                        voiceStatus.textContent = 'Listening for commands...';
+                        voiceBtn.textContent = 'Disable Voice Commands';
+                    }
+                });
+            } else {
+                voiceBtn.style.display = 'none';
+                voiceStatus.textContent = 'Voice commands not supported in this browser';
+            }
+
+            // Initial setup
+            resizeCanvas();
+            highScoreDisplay.innerText = highScore;
         });
     </script>
 </body>
